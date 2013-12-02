@@ -1,6 +1,6 @@
 ## goal of this clone
 
- Puprpose of this is to allow SchemaDocument storage (inside a Document) in MongoDB and get back.
+ Purpose of this clone is to allow SchemaDocument storage (inside a Document) in MongoDB and get back.
 
 # MongoKit [![Build Status](https://travis-ci.org/namlook/mongokit.png)](https://travis-ci.org/namlook/mongokit.png)
 
