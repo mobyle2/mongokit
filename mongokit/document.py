@@ -139,7 +139,7 @@ class Document(SchemaDocument):
 
     __metaclass__ = DocumentProperties
 
-    type_field = '_type'
+    #type_field = '_type'
 
     atomic_save = False  # XXX Deprecated
     skip_validation = False
@@ -158,13 +158,14 @@ class Document(SchemaDocument):
         type(re.compile("")),
     ]
 
-    def __init__(self, doc=None, gen_skel=True, collection=None, lang='en', fallback_lang='en'):
+    def __init__(self, doc=None, gen_skel=True, collection=None, lang='en', fallback_lang='en', schema_2_restore = None):
         self._authorized_types = self.authorized_types[:]
         # If using autorefs, we need another authorized
         if self.use_autorefs:
             self._authorized_types += [Document, SchemaProperties]
-        super(Document, self).__init__(doc=doc, gen_skel=gen_skel, gen_auth_types=False,
-                                       lang=lang, fallback_lang=fallback_lang)
+        super(Document, self).__init__(doc = doc, gen_skel = gen_skel, gen_auth_types = False,
+                                       lang = lang, fallback_lang = fallback_lang, 
+                                       schema_2_restore = schema_2_restore)
         if self.type_field in self:
             self[self.type_field] = unicode(self.__class__.__name__)
         # collection
@@ -283,7 +284,7 @@ class Document(SchemaDocument):
 
         See pymongo's documentation for more details on arguments.
         """
-        return self.collection.find(wrap=self._obj_class, *args, **kwargs)
+        return self.collection.find(wrap=self._obj_class, schema_2_restore = self._schema_2_restore,*args, **kwargs)
 
     def find_and_modify(self, *args, **kwargs):
         """

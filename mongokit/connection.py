@@ -32,19 +32,24 @@ except ImportError:
     from pymongo import Connection as PymongoConnection
 from database import Database
 
+from mongokit.document import Document
 
 class CallableMixin(object):
     """
     brings the callable method to a Document. usefull for the connection's
     register method
     """
-    def __call__(self, doc=None, gen_skel=True, lang='en', fallback_lang='en'):
+    def __call__(self, doc=None, gen_skel=True, lang='en', fallback_lang='en', schema_2_restore = None):
+        """
+        
+        """
         return self._obj_class(
             doc=doc,
             gen_skel=gen_skel,
-            collection=self.collection,
+            collection=self.collection,#self.collection come from document which is set in __init__
             lang=lang,
-            fallback_lang=fallback_lang
+            fallback_lang=fallback_lang,
+            schema_2_restore = schema_2_restore
         )
 
 _iterables = (list, tuple, set, frozenset)
@@ -55,7 +60,9 @@ class MongoKitConnection(object):
     def __init__(self, *args, **kwargs):
         self._databases = {}
         self._registered_documents = {}
-
+        self._registered_schema_documents = {}
+        
+        
     def register(self, obj_list):
         decorator = None
         if not isinstance(obj_list, _iterables):
@@ -74,12 +81,21 @@ class MongoKitConnection(object):
                         del col._registered_documents[obj_name]
         # register
         for obj in obj_list:
-            CallableDocument = type(
-                "Callable%s" % obj.__name__,
-                (obj, CallableMixin),
-                {"_obj_class": obj, "__repr__": object.__repr__}
-            )
-            self._registered_documents[obj.__name__] = CallableDocument
+            if issubclass(obj, Document):
+                #mettre une ref vers les SD authorize??
+                #obj._schema_2_restore = self._registered_schema_documents
+                CallableDocument = type(
+                    "Callable%s" % obj.__name__,
+                    (obj, CallableMixin),
+                    {"_obj_class": obj, 
+                     "__repr__": object.__repr__,
+                     "_schema_2_restore" : self._registered_schema_documents}
+                )
+                self._registered_documents[obj.__name__] = CallableDocument
+            else:
+                #c'est un SchemaDocument
+                obj.structure['_type'] = unicode(obj.__name__)
+                self._registered_schema_documents[unicode(obj.__name__)] = obj
         # if the class object is stored, it means the user used a decorator and
         # we must return the class object
         if decorator is not None:

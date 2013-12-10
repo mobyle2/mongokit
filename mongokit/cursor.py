@@ -34,6 +34,7 @@ class Cursor(PymongoCursor):
         self.__wrap = None
         if kwargs:
             self.__wrap = kwargs.pop('wrap', None)
+            self.__schema_2_restore = kwargs.pop('schema_2_restore', None)
         super(Cursor, self).__init__(*args, **kwargs)
 
     def next(self):
@@ -44,7 +45,6 @@ class Cursor(PymongoCursor):
                 item = self._Cursor__data.popleft()
             else:
                 item = self._Cursor__data.pop(0)
-
             return self.__manipulate_item(item)
 
         else:
@@ -68,7 +68,7 @@ class Cursor(PymongoCursor):
         if self.__wrap is not None:
             if self.__wrap.type_field in son:
                 return getattr(self._Cursor__collection,
-                               son[self.__wrap.type_field])(son)
-            return self.__wrap(son, collection=self._Cursor__collection)
+                               son[self.__wrap.type_field])(doc = son, schema_2_restore = self.__schema_2_restore)
+            return self.__wrap(son, collection=self._Cursor__collection, schema_2_restore = self.__schema_2_restore)
         else:
             return son

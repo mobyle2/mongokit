@@ -208,6 +208,31 @@ class SchemaProperties(type):
     @classmethod
     def _validate_descriptors(cls, attrs):
         # TODO i18n validator
+        """
+        :param attrs: the attributes to validate
+        :type attrs: dictionary
+        :raise ValueError: if a key is found in default_values keys but not present in _namespaces list 
+        :raise ValueError: if a key is found in required_fields keys but not present in _namespaces list
+        :raise ValueError: if a key is found in validators keys but not present in _namespaces list
+        :raise DuplicateRequiredError:
+        :raise DuplicateI18nError:
+        :raise ValueError:
+        
+        the attrs contains
+          * key => value
+          * _namespaces => the list of field defined in class attribute 'structure'
+          * __module__ => a reference to the calling module
+          * __collection__ => the name of the collection
+          * __database__ =>  test
+          * authorized_types => list of authorized types [<type 'int'>, <class 'mongokit.schema_document.CustomType'>, ...]
+          * _protected_field_names  =>  list of the name of methods used by mongo so forbidden to use in structure ['from_json', 'find_fulltext', ...]
+          * default_values  => a dictionary corresponding to the class attribute default_values
+          * required_fields => the union of required_fields class attributes.
+          * structure  => a dictionary corresponding to the class attribute structure
+        ..note::
+          the  _namespaces, authorized_types, required_fields, default_values, structure are the union of all respective class attribute 
+          along the inheritance tree
+        """
         for dv in attrs.get('default_values', {}):
             if not dv in attrs['_namespaces']:
                 raise ValueError("Error in default_values: can't find %s in structure" % dv)
@@ -302,7 +327,11 @@ class SchemaDocument(dict):
     {"foo":{"bar":u"bla}}
     """
     __metaclass__ = SchemaProperties
-
+    
+    _iterables = (list, tuple, set, frozenset)
+    
+    type_field = '_type'
+    
     structure = None
     required_fields = []
     default_values = {}
@@ -334,7 +363,7 @@ class SchemaDocument(dict):
         CustomType,
     ]
 
-    def __init__(self, doc=None, gen_skel=True, gen_auth_types=True, validate=True, lang='en', fallback_lang='en'):
+    def __init__(self, doc=None, gen_skel=True, gen_auth_types=True, validate=True, lang='en', fallback_lang='en' , schema_2_restore= None):
         """
         doc : a dictionary
         gen_skel : if True, generate automatically the skeleton of the doc
@@ -346,13 +375,31 @@ class SchemaDocument(dict):
         """
         if self.structure is None:
             self.structure = {}
+        if schema_2_restore is None:
+            schema_2_restore = {}
         self._current_lang = lang
         self._fallback_lang = fallback_lang
         self.validation_errors = {}
         # init
         if doc:
+            def restore(v):
+                if (isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore):
+                    sd = schema_2_restore[v[self.type_field]](doc = v, schema_2_restore = schema_2_restore)
+                    return sd
+                else:
+                    return v
+            
             for k, v in doc.iteritems():
-                self[k] = v
+                if isinstance(v, self._iterables):
+                    new_iterable = []
+                    for item in v:
+                        new_item = restore(item)
+                        new_iterable.append(new_item)
+                    self[k] = new_iterable 
+                else:
+                    restored_v = restore(v)            
+                    self[k] = restored_v        
+                    
             gen_skel = False
         if gen_skel:
             self.generate_skeleton()
@@ -364,6 +411,8 @@ class SchemaDocument(dict):
             self.__generate_doted_dict(self, self.structure)
         if self.i18n:
             self._make_i18n()
+        if self.type_field in self:
+            self[self.type_field] = unicode(self.__class__.__name__)
 
     def generate_skeleton(self):
         """
@@ -403,7 +452,7 @@ class SchemaDocument(dict):
                     ['db', 'collection', 'versioning_collection', 'connection', 'fs']:
                 log.warning("dot notation: %s was not found in structure. Add it as attribute instead" % key)
             dict.__setattr__(self, key, value)
-
+        
     def __getattr__(self, key):
         if key not in self._protected_field_names and self.use_dot_notation and key in self:
             if isinstance(self[key], i18n):
@@ -420,6 +469,14 @@ class SchemaDocument(dict):
 
     @classmethod
     def __walk_dict(cls, dic):
+        """
+        :param dic: a dictionnary representing a document or a portion of document in mongoDB 
+        :type dic: a dictionary
+        :return: a generator which yield all the key of the dic. if the key is a type 
+         the name of the type with the '$' as prefix is used.
+         this method is recursive so if the structure is nested all keys are flattened
+        :rtype: list of string
+        """
         # thanks jean_b for the patch
         for key, value in dic.items():
             if isinstance(value, dict) and len(value):
@@ -812,6 +869,19 @@ class SchemaDocument(dict):
                 self._raise_exception(RequireFieldError, req, "%s is required" % req)
 
     def __generate_skeleton(self, doc, struct, path=""):
+        """
+        generate a document (modify doc) skeleton using struct as template
+        doc will have the same keys as struct with same type of object as value but the objects are empty
+        
+        :param doc: when a new SD is instanciate doc(as init argument) 
+          is None and self is an empty dict so doc = {}
+        :type doc: dict
+        :param struct: the attribute structure of the class (key = string , value are type or SD or D classes)
+        :type struct: dict
+        :param path: the path inside the structure 
+        :type path: string
+            
+        """
         for key in struct:
             if type(key) is type:
                 new_key = "$%s" % key.__name__
@@ -822,6 +892,8 @@ class SchemaDocument(dict):
             # Automatique generate the skeleton with NoneType
             #
             if type(key) is not type and key not in doc:
+                #a schemaDocument class is NOT an instance of dict
+                #a schemaDocument object IS an instance of dict
                 if isinstance(struct[key], dict):
                     if type(struct[key]) is dict and self.use_dot_notation:
                         if new_path in self._i18n_namespace:
@@ -832,9 +904,12 @@ class SchemaDocument(dict):
                         if callable(struct[key]):
                             doc[key] = struct[key]()
                         else:
+                            #it can be a dictionnary a dict is not callable but type(dict)() is a new empty dict !
                             doc[key] = type(struct[key])()
-                elif struct[key] is dict:
-                    doc[key] = {}
+                #dead branch ?? if struct[key] is a dict it's also an isinstance of dict so the first case is selected
+                #elif struct[key] is dict:
+                #    print "struct[key] is dict"
+                #    doc[key] = {}
                 elif isinstance(struct[key], list):
                     doc[key] = type(struct[key])()
                 elif isinstance(struct[key], CustomType):
@@ -853,7 +928,8 @@ class SchemaDocument(dict):
             #
             if isinstance(struct[key], dict) and type(key) is not type:
                 self.__generate_skeleton(doc[key], struct[key], new_path)
-
+            
+            
     def __generate_doted_dict(self, doc, struct, path=""):
         for key in struct:
             #

@@ -39,6 +39,7 @@ class Collection(PymongoCollection):
         self._collections = {}
         super(Collection, self).__init__(*args, **kwargs)
         self._registered_documents = self.database.connection._registered_documents
+        self._registered_schema_documents = self.database.connection._registered_schema_documents
 
     def __getattr__(self, key):
         if key in self._registered_documents:
