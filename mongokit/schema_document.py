@@ -906,10 +906,8 @@ class SchemaDocument(dict):
                         else:
                             #it can be a dictionnary a dict is not callable but type(dict)() is a new empty dict !
                             doc[key] = type(struct[key])()
-                #dead branch ?? if struct[key] is a dict it's also an isinstance of dict so the first case is selected
-                #elif struct[key] is dict:
-                #    print "struct[key] is dict"
-                #    doc[key] = {}
+                elif struct[key] is dict:
+                    doc[key] = {}
                 elif isinstance(struct[key], list):
                     doc[key] = type(struct[key])()
                 elif isinstance(struct[key], CustomType):
