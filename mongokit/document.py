@@ -166,8 +166,9 @@ class Document(SchemaDocument):
         super(Document, self).__init__(doc = doc, gen_skel = gen_skel, gen_auth_types = False,
                                        lang = lang, fallback_lang = fallback_lang, 
                                        schema_2_restore = schema_2_restore)
-        if self.type_field in self:
-            self[self.type_field] = unicode(self.__class__.__name__)
+        #if self.type_field in self:
+        #    self[self.type_field] = unicode(self.__class__.__name__)
+        
         # collection
         self.collection = collection
         if collection:
