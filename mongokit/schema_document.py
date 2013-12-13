@@ -402,9 +402,7 @@ class SchemaDocument(dict):
 #                     restored_v = restore(v)            
 #                     self[k] = restored_v        
             new_dict = self.generate_doc(doc, schema_2_restore)
-            for k, v in new_dict.iteritems():
-                self[k] = v
-            #self.update(new_dict)        
+            self.update(new_dict)        
             gen_skel = False
         if gen_skel:
             self.generate_skeleton()
