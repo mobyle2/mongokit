@@ -82,8 +82,6 @@ class MongoKitConnection(object):
         # register
         for obj in obj_list:
             if issubclass(obj, Document):
-                #mettre une ref vers les SD authorize??
-                #obj._schema_2_restore = self._registered_schema_documents
                 CallableDocument = type(
                     "Callable%s" % obj.__name__,
                     (obj, CallableMixin),
@@ -96,6 +94,7 @@ class MongoKitConnection(object):
                 #c'est un SchemaDocument
                 obj.structure['_type'] = unicode(obj.__name__)
                 self._registered_schema_documents[unicode(obj.__name__)] = obj
+                obj.authorized_types.append(obj) 
         # if the class object is stored, it means the user used a decorator and
         # we must return the class object
         if decorator is not None:

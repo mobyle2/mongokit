@@ -561,6 +561,15 @@ class SchemaDocument(dict):
                         __validate_structure(struct[key], name, authorized_types)
                     elif hasattr(struct[key], 'structure'):
                         __validate_structure(struct[key], name, authorized_types)
+                    elif isinstance(struct[key], unicode) and key == cls.type_field:
+                        ok = False
+                        for auth_type in authorized_types:
+                            if issubclass(cls, auth_type):
+                                ok = True
+                                break
+                        else:
+                            raise StructureError(
+                                "%s: %s is not an authorized type" % (name, struct[key]))
                     elif struct[key] not in authorized_types:
                         ok = False
                         for auth_type in authorized_types:
