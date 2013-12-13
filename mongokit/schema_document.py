@@ -382,24 +382,29 @@ class SchemaDocument(dict):
         self.validation_errors = {}
         # init
         if doc:
-            def restore(v):
-                if (isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore):
-                    sd = schema_2_restore[v[self.type_field]](doc = v, schema_2_restore = schema_2_restore)
-                    return sd
-                else:
-                    return v
-            
-            for k, v in doc.iteritems():
-                if isinstance(v, self._iterables):
-                    new_iterable = []
-                    for item in v:
-                        new_item = restore(item)
-                        new_iterable.append(new_item)
-                    self[k] = new_iterable 
-                else:
-                    restored_v = restore(v)            
-                    self[k] = restored_v        
-                    
+#             def restore(v):
+#                 if (isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore):
+#                     sd = schema_2_restore[v[self.type_field]](doc = v, schema_2_restore = schema_2_restore)
+#                     return sd
+#                 else:
+#                     return v
+#             
+#             for k, v in doc.iteritems():
+#                 if isinstance(v, self._iterables):
+#                     new_iterable = []
+#                     for item in v:
+#                         new_item = restore(item)
+#                         new_iterable.append(new_item)
+#                     self[k] = new_iterable 
+#                 if isinstance(v, dict):
+#                     
+#                 else:
+#                     restored_v = restore(v)            
+#                     self[k] = restored_v        
+            new_dict = self.generate_doc(doc, schema_2_restore)
+            for k, v in new_dict.iteritems():
+                self[k] = v
+            #self.update(new_dict)        
             gen_skel = False
         if gen_skel:
             self.generate_skeleton()
@@ -413,6 +418,51 @@ class SchemaDocument(dict):
             self._make_i18n()
         if self.type_field in self:
             self[self.type_field] = unicode(self.__class__.__name__)
+    
+    def generate_doc(self, doc, schema_2_restore):
+        print "==== appel de generate_doc ==== "
+        print "doc = ", doc
+        print "schema_2_restore = ", schema_2_restore
+        new_dict  = {}
+        def restore(v):
+            print "@@@@@@@@@@@ appel de restore(",v,")  type(v) = ", type(v)
+            print "isinstance(v, dict) = ",isinstance(v, dict)
+            if isinstance(v, dict):
+                print "(self.type_field in v)", self.type_field in v
+                if self.type_field in v:
+                    print "(v[self.type_field] in schema_2_restore)", v[self.type_field] in schema_2_restore
+            if (isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore):
+                print "appel recursif de "
+                print "schema_2_restore[",v,"[",self.type_field,"]](doc =",v,", schema_2_restore = ", schema_2_restore,")"
+                sd = schema_2_restore[v[self.type_field]](doc = v, schema_2_restore = schema_2_restore)
+                print "@@@@@@@@@@@ fin restore return ", sd , " type(sd) = ", type(sd)
+                return sd
+            else:
+                print "@@@@@@@@@@@ fin restore return ", v , " type(v) = ", type(v)
+                return v
+        print "doc = ", doc, "  type(doc) = ", type(doc)
+        for k, v in doc.iteritems():
+            print "------- loop"
+            print "k = ", k
+            print "v = ", v
+            if isinstance(v, self._iterables):
+                new_iterable = []
+                for item in v:
+                    new_item = restore(item)
+                    new_iterable.append(new_item)
+                new_dict[k] = new_iterable 
+            elif (isinstance(v, dict)) and (not self.type_field in v or not v[self.type_field] in schema_2_restore):
+                print "(isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore)"
+                new_dict[k] = self.generate_doc(v, schema_2_restore)
+                print "new_dict[",k,"]" 
+            else:
+                restored_v = restore(v)            
+                new_dict[k] = restored_v
+        print "==== fin generate_doc return new_dict = ", new_dict
+        return new_dict 
+    
+    
+    
 
     def generate_skeleton(self):
         """
