@@ -401,7 +401,7 @@ class SchemaDocument(dict):
 #                 else:
 #                     restored_v = restore(v)            
 #                     self[k] = restored_v        
-            new_dict = self.generate_doc(doc, schema_2_restore)
+            new_dict = self._generate_doc(doc, schema_2_restore)
             self.update(new_dict)        
             gen_skel = False
         if gen_skel:
@@ -417,7 +417,7 @@ class SchemaDocument(dict):
         if self.type_field in self:
             self[self.type_field] = unicode(self.__class__.__name__)
     
-    def generate_doc(self, doc, schema_2_restore):
+    def _generate_doc(self, doc, schema_2_restore):
         print "==== appel de generate_doc ==== "
         print "doc = ", doc
         print "schema_2_restore = ", schema_2_restore
@@ -451,7 +451,7 @@ class SchemaDocument(dict):
                 new_dict[k] = new_iterable 
             elif (isinstance(v, dict)) and (not self.type_field in v or not v[self.type_field] in schema_2_restore):
                 print "(isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore)"
-                new_dict[k] = self.generate_doc(v, schema_2_restore)
+                new_dict[k] = self._generate_doc(v, schema_2_restore)
                 print "new_dict[",k,"]" 
             else:
                 restored_v = restore(v)            
