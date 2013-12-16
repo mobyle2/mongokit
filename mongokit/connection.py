@@ -91,8 +91,8 @@ class MongoKitConnection(object):
                 )
                 self._registered_documents[obj.__name__] = CallableDocument
             else:
-                #c'est un SchemaDocument
-                obj.structure['_type'] = unicode(obj.__name__)
+                #It's a SchemaDocument
+                obj.structure[obj.type_field] = unicode(obj.__name__)
                 self._registered_schema_documents[unicode(obj.__name__)] = obj
                 obj.authorized_types.append(obj) 
         # if the class object is stored, it means the user used a decorator and
