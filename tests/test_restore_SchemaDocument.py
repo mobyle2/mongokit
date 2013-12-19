@@ -202,7 +202,7 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
         self.assertEqual(type(sylvester_2['catch']), type(tweety))
         self.assertEqual(sylvester_2['catch']['name'], 'Tweety')
         hector_2 = meme_reloaded['dog']
-        self.assertEqual(type(hector_2['catch']), type({}))
+        self.assertEqual(type(hector_2['catch']), type(sylvester))
         self.assertEqual(hector_2['catch']['name'], 'Sylvester')
 
     def test_restore_in_dict(self):
@@ -261,4 +261,4 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
         hector_2 = meme_reloaded['pets'][u'hector']
         self.assertIs(type(tweety_2), Canary)
         self.assertIs(type(sylvester_2), Cat)
-        self.assertIs(type(hector_2), Dog)
+        self.assertIs(type(hector_2), type({}))
