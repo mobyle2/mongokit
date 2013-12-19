@@ -163,11 +163,10 @@ class Document(SchemaDocument):
         # If using autorefs, we need another authorized
         if self.use_autorefs:
             self._authorized_types += [Document, SchemaProperties]
+        
         super(Document, self).__init__(doc = doc, gen_skel = gen_skel, gen_auth_types = False,
                                        lang = lang, fallback_lang = fallback_lang, 
                                        schema_2_restore = schema_2_restore)
-        #if self.type_field in self:
-        #    self[self.type_field] = unicode(self.__class__.__name__)
         
         # collection
         self.collection = collection
@@ -741,6 +740,8 @@ class Document(SchemaDocument):
                 elif isinstance(struct[key][0], dict):
                     for no, obj in enumerate(doc[key]):
                         self._make_reference(obj, struct[key][0], "%s.%s" % (new_path, no))
+                        
+
 
 
 class R(CustomType):
