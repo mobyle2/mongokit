@@ -382,8 +382,7 @@ class SchemaDocument(dict):
         self.validation_errors = {}
         # init
         if doc:
-            new_dict = self._generate_doc(doc, schema_2_restore)
-            self.update(new_dict)        
+            self._generate_doc(doc, schema_2_restore)
             gen_skel = False
         if gen_skel:
             self.generate_skeleton()
@@ -398,27 +397,37 @@ class SchemaDocument(dict):
         if self.type_field in self:
             self[self.type_field] = unicode(self.__class__.__name__)
     
-    def _generate_doc(self, doc, schema_2_restore):
-        new_dict  = {}
+    def _generate_doc(self, doc, schema_2_restore, obj = None):
+
         def restore(v):
             if (isinstance(v, dict)) and (self.type_field in v) and (v[self.type_field] in schema_2_restore):
                 sd = schema_2_restore[v[self.type_field]](doc = v, schema_2_restore = schema_2_restore)
                 return sd
             else:
                 return v
+            
+        if obj is None:
+            obj = self
+
         for k, v in doc.iteritems():
             if isinstance(v, self._iterables):
                 new_iterable = []
                 for item in v:
                     new_item = restore(item)
                     new_iterable.append(new_item)
-                new_dict[k] = new_iterable 
+                obj[k] = new_iterable
             elif (isinstance(v, dict)) and (not self.type_field in v or not v[self.type_field] in schema_2_restore):
-                new_dict[k] = self._generate_doc(v, schema_2_restore)
+                # import Document here to avoid cyclic dependencies
+                # between SchemaDocument and Document
+                from mongokit import Document
+                if isinstance(v, Document):
+                    obj[k] = type(v)(doc = v, collection = v.collection, schema_2_restore= schema_2_restore)
+                else:
+                    obj[k] = type(v)()
+                self._generate_doc(doc[k], schema_2_restore, obj = obj[k])
             else:
                 restored_v = restore(v)            
-                new_dict[k] = restored_v
-        return new_dict 
+                obj[k] = restored_v
     
     
     
@@ -791,6 +800,7 @@ class SchemaDocument(dict):
                             for obj in doc[key]:
                                 self._process_custom_type(target, obj, struct[key][0], new_path, root_path)
 
+            
     def _set_default_fields(self, doc, struct, path=""):
         # TODO check this out, this method must be restructured
         for key in struct:
