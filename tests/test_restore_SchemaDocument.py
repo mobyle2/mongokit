@@ -83,6 +83,32 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
         self.assertEqual(type(meme_reloaded['dog']), type({}))
         self.assertEqual(meme_reloaded['dog']['name'], 'Spike')
 
+
+    def test_restore_Document(self):
+        @self.connection.register
+        class Pet(Document):
+            structure = {'name' : basestring }
+
+        @self.connection.register
+        class GrandMa(Document):
+            __database__ = 'test'
+            __collection__ = 'granny'
+            structure = {
+                     '_type' : unicode,
+                     'bird' : Pet,
+                     }
+        tweety = Pet()
+        tweety['name'] = 'Tweety'
+
+        granny= self.connection.GrandMa()
+        granny['bird'] = tweety
+        granny.save()
+
+        meme_reloaded = self.connection.GrandMa.fetch_one({})
+        self.assertEqual(type(meme_reloaded['bird']), type(tweety))
+        self.assertEqual(meme_reloaded['bird']['name'], 'Tweety')
+
+
     def test_restore_SD_in_list(self):
         class Pet(SchemaDocument):
             structure = {'name' : basestring }

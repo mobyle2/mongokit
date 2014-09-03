@@ -90,11 +90,9 @@ class MongoKitConnection(object):
                      "_schema_2_restore" : self._registered_schema_documents}
                 )
                 self._registered_documents[obj.__name__] = CallableDocument
-            else:
-                #It's a SchemaDocument
-                obj.structure[obj.type_field] = unicode(obj.__name__)
-                self._registered_schema_documents[unicode(obj.__name__)] = obj
-                obj.authorized_types.append(obj) 
+            obj.structure[obj.type_field] = unicode(obj.__name__)
+            self._registered_schema_documents[unicode(obj.__name__)] = obj
+            obj.authorized_types.append(obj) 
         # if the class object is stored, it means the user used a decorator and
         # we must return the class object
         if decorator is not None:
