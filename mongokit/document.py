@@ -634,7 +634,7 @@ class Document(SchemaDocument):
     def __getattribute__(self, key):
         if key in ['collection', 'db', 'connection']:
             if self.__dict__.get(key) is None:
-                raise ConnectionError('No collection found')
+                raise ConnectionError('No %s found' % key)
         return super(Document, self).__getattribute__(key)
 
     def _make_reference(self, doc, struct, path=""):
