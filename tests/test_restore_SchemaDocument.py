@@ -108,6 +108,56 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
         self.assertEqual(type(meme_reloaded['bird']), type(tweety))
         self.assertEqual(meme_reloaded['bird']['name'], 'Tweety')
 
+    def test_restore_embedded_in_dict(self):
+        @self.connection.register
+        class Pet(Document):
+            structure = {'name' : basestring }
+
+        @self.connection.register
+        class GrandMa(Document):
+            #use_dot_notation = True
+            __database__ = 'test'
+            __collection__ = 'granny'
+            structure = {
+                     '_type' : unicode,
+                     'birds' : {basestring: Pet}
+                     }
+
+        tweety = Pet()
+        tweety['name'] = 'Tweety'
+
+        granny= self.connection.GrandMa()
+        granny['birds']['tweety'] = tweety
+        granny.save()
+
+        meme_reloaded = self.connection.GrandMa.fetch_one({})
+        self.assertEqual(type(meme_reloaded['birds']['tweety']), type(tweety))
+
+    def test_restore_dotted(self):
+        @self.connection.register
+        class Pet(SchemaDocument):
+            structure = {'name' : basestring }
+
+        @self.connection.register
+        class GrandMa(Document):
+            __database__ = 'test'
+            __collection__ = 'granny'
+            use_dot_notation = True
+            structure = {
+                     '_type' : unicode,
+                     'bird' : Pet,
+                     }
+        tweety = Pet()
+        tweety['name'] = 'Tweety'
+
+        granny= self.connection.GrandMa()
+        granny['bird'] = tweety
+        granny.save()
+
+        meme_reloaded = self.connection.GrandMa.fetch_one({})
+        self.assertEqual(type(meme_reloaded['bird']), type(tweety))
+        self.assertEqual(meme_reloaded['bird']['name'], 'Tweety')
+
 
     def test_restore_SD_in_list(self):
         class Pet(SchemaDocument):
