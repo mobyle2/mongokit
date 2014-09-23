@@ -86,7 +86,7 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
 
     def test_restore_Document(self):
         @self.connection.register
-        class Pet(Document):
+        class Pet(SchemaDocument):
             structure = {'name' : basestring }
 
         @self.connection.register
@@ -99,14 +99,15 @@ class RestoreSchemaDocumentTestCase(unittest.TestCase):
                      }
         tweety = Pet()
         tweety['name'] = 'Tweety'
-
         granny= self.connection.GrandMa()
         granny['bird'] = tweety
         granny.save()
-
         meme_reloaded = self.connection.GrandMa.fetch_one({})
         self.assertEqual(type(meme_reloaded['bird']), type(tweety))
         self.assertEqual(meme_reloaded['bird']['name'], 'Tweety')
+        with self.failUnlessRaises(StructureError):
+            tweety['toto'] = 'tutu'
+            granny.save()
 
     def test_restore_embedded_in_dict(self):
         @self.connection.register

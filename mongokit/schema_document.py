@@ -647,9 +647,11 @@ class SchemaDocument(dict):
         """
         check if doc field types match the doc field structure
         """
+        if struct is None and doc is None:
+            return
         if type(struct) is type or struct is None:
-            if struct is None:
-                if type(doc) not in self.authorized_types:
+            if struct is None and doc is not None:
+                if not any(isinstance(doc, klass) for klass in self.authorized_types):
                     self._raise_exception(AuthorizedTypeError, type(doc).__name__,
                                           "%s is not an authorized types" % type(doc).__name__)
             elif not isinstance(doc, struct) and doc is not None:
@@ -670,6 +672,9 @@ class SchemaDocument(dict):
                 else:
                     self._raise_exception(SchemaTypeError, path,
                                           "%s must be an instance of %s not %s" % (path, struct, type(doc).__name__))
+        elif isinstance(struct, SchemaProperties):
+            if doc is not None:
+                doc.validate()
         elif isinstance(struct, dict):
             if not isinstance(doc, type(struct)):
                 self._raise_exception(SchemaTypeError, path,
