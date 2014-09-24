@@ -452,8 +452,10 @@ class SchemaDocument(dict):
 
         Additionally, this method will process all
         validators.
-
         """
+        self._validate_schemadocument()
+
+    def _validate_schemadocument(self):
         if self.validators:
             self._process_validators(self, self.structure)
         self._process_custom_type('bson', self, self.structure)
@@ -674,7 +676,8 @@ class SchemaDocument(dict):
                                           "%s must be an instance of %s not %s" % (path, struct, type(doc).__name__))
         elif isinstance(struct, SchemaProperties):
             if doc is not None:
-                doc.validate()
+                if hasattr(doc, '_validate_schemadocument'):
+                    doc._validate_schemadocument()
         elif isinstance(struct, dict):
             if not isinstance(doc, type(struct)):
                 self._raise_exception(SchemaTypeError, path,
