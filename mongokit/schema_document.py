@@ -676,8 +676,7 @@ class SchemaDocument(dict):
                                           "%s must be an instance of %s not %s" % (path, struct, type(doc).__name__))
         elif isinstance(struct, SchemaProperties):
             if doc is not None:
-                if hasattr(doc, '_validate_schemadocument'):
-                    doc._validate_schemadocument()
+                doc._validate_schemadocument()
         elif isinstance(struct, dict):
             if not isinstance(doc, type(struct)):
                 self._raise_exception(SchemaTypeError, path,
