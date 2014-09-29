@@ -90,6 +90,12 @@ class IS(SchemaOperator):
         return '<is '+representation.join([repr(i) for i in self._operands]) + '>'
 
     def validate(self, value):
+        if isinstance(value, str):
+            # why do we convert values to unicode?
+            # because IS operands in MongoKit are necessarily unicode if string
+            # + mongo automatically converts strings to unicode,
+            # so it seems excessively picky to refuse non-unicode strings.
+            value = unicode(value)
         if value in self._operands:
             for op in self._operands:
                 if value == op and isinstance(value, type(op)):
